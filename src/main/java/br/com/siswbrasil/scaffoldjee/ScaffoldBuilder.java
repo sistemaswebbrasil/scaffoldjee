@@ -68,14 +68,8 @@ public class ScaffoldBuilder {
 				newLines.add(newLine);
 			}
 		}
-
 		newLines.sort((p1, p2) -> p1.compareTo(p2));
 		objectContent = buildObjectContent(newLines);
-
-		System.out.println("<>============<>");
-		System.out.println(objectContent);
-		System.out.println("<>============<>");
-		// writeInFile(objectContent, labelPath);
 		return new OutputGenereate(objectContent, destinationFile);
 	}
 	
@@ -118,23 +112,16 @@ public class ScaffoldBuilder {
 	}
 
 	public SourceProperty readProperties(SourceProperty selected) throws ScaffoldBuilderNotFoudException {
-		System.out.println("entreou aqui no readProperties");
-
 		List<String> lines = readFile(selected.getPath(), true);
 		List<SourcePropertyDetails> details = scanLines(lines, selected);
 		selected.setDetails(details);
-		System.out.println("selected: " + selected);
 		return selected;
 	}
 
 	private List<SourcePropertyDetails> scanLines(List<String> lines, SourceProperty selected) {
-		System.out.println("entreou aqui no scanLines");
-		System.out.println("--------------------------------------------");
 		List<SourcePropertyDetails> details = new ArrayList<>();
-		String objectContent = null;
 		boolean selectedIsId = false;
 		for (String line : lines) {
-			objectContent += line + "\n";
 			String selectedName = null;
 			String selectedType = null;
 			if (line.contains(";")) {
