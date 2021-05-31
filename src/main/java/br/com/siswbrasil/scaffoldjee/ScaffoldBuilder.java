@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -72,18 +73,19 @@ public class ScaffoldBuilder {
 		objectContent = buildObjectContent(newLines);
 		return new OutputGenereate(objectContent, destinationFile);
 	}
-	
+
 	public void writeInFile(OutputGenereate outputGenereate) throws ScaffoldBuilderException {
-		if (outputGenereate == null ) {			
-			throw new ScaffoldBuilderException("Object for generation was not reported");			
-		}		
-		if (outputGenereate != null && outputGenereate.getOutput() == null || outputGenereate.getOutput().isEmpty()) {			
-			throw new ScaffoldBuilderException("Content this emptiness and nothing will be created");			
+		if (outputGenereate == null) {
+			throw new ScaffoldBuilderException("Object for generation was not reported");
 		}
-		if (outputGenereate != null && outputGenereate.getDetination() == null || outputGenereate.getDetination().isEmpty()) {			
-			throw new ScaffoldBuilderException("Uninformed destination path");			
-		}		
-		
+		if (outputGenereate != null && outputGenereate.getOutput() == null || outputGenereate.getOutput().isEmpty()) {
+			throw new ScaffoldBuilderException("Content this emptiness and nothing will be created");
+		}
+		if (outputGenereate != null && outputGenereate.getDetination() == null
+				|| outputGenereate.getDetination().isEmpty()) {
+			throw new ScaffoldBuilderException("Uninformed destination path");
+		}
+
 		String fileAux = new File(outputGenereate.getDetination()).getParent();
 		File baseViewFolderPathDir = new File(fileAux);
 		if (!baseViewFolderPathDir.exists()) {
@@ -94,9 +96,9 @@ public class ScaffoldBuilder {
 			fileWriter.write(outputGenereate.getOutput());
 			fileWriter.close();
 		} catch (IOException e) {
-			throw new ScaffoldBuilderException("Failure to write new content",e);
+			throw new ScaffoldBuilderException("Failure to write new content", e);
 		}
-	}	
+	}
 
 	private String buildObjectContent(List<String> lines) {
 		String objectContent = "";
@@ -163,9 +165,59 @@ public class ScaffoldBuilder {
 				Files.lines(path).forEach(s -> rowsArray.add(s));
 			}
 		} catch (IOException e) {
-			throw new ScaffoldBuilderNotFoudException(String.format("ailed to read the file %s", objectPath), e);
+			throw new ScaffoldBuilderNotFoudException(String.format("Failed to read the file %s", objectPath), e);
 		}
 		return rowsArray;
+	}
+
+	public OutputGenereate generateRepository(SourceProperty selected, String baseRepositoryPath,
+			String templateRepositoryPath) throws ScaffoldBuilderException {
+		
+		if (baseRepositoryPath == null || baseRepositoryPath.isEmpty()) {
+			throw new ScaffoldBuilderException("Base Repository path not informed");
+		}
+		
+		if (templateRepositoryPath == null || templateRepositoryPath.isEmpty()) {
+			throw new ScaffoldBuilderException("Template Repository path not informed");
+		}	
+
+		String repositoryBasePackage = null;
+		String entityPackage = null;
+		String entity = selected.getName();
+		String repository = String.format("%s%s", entity,"Repository");
+		String repositoryPath = String.format("%s/%s.java", baseRepositoryPath,repository);  
+		String idType = null ;
+
+		for (SourcePropertyDetails item : selected.getDetails()) {			
+			if (item.getContextType().equals("packageName")) {
+				entityPackage = item.getValue();
+				repositoryBasePackage = entityPackage.subSequence(0, entityPackage.lastIndexOf(".")) + ".repository";
+			}
+			if (item.getContextType().equals("key")) {
+				idType = item.getJavaType();
+			}			
+		}
+		
+		List<String> sourceProperties = Arrays.asList("${repositoryBasePackage}","${entityPackage}","${entity}","${repository}","${id-type}");		
+		List<String> replacedProperties = Arrays.asList(repositoryBasePackage,entityPackage,entity,repository,idType);	
+		
+		String objectContent = replaceProperties(templateRepositoryPath, sourceProperties, replacedProperties);
+		return new OutputGenereate(objectContent, repositoryPath);
+	}
+	
+	private String replaceProperties(String templateFile,List<String> sourceProperties,List<String> replacedProperties) throws ScaffoldBuilderNotFoudException {
+		List<String> lines = readFile(templateFile, false);		
+		List<String> newLines = new ArrayList<String>();
+		for (String line : lines) {
+			
+			for (int i = 0; i < sourceProperties.size(); i++) {
+				if (line.contains(sourceProperties.get(i))) {
+					line = line.replace(sourceProperties.get(i), replacedProperties.get(i));
+				}				
+			}
+			newLines.add(line);			
+		}
+		return buildObjectContent(newLines);		
 	}
 
 }
